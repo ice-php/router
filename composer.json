@@ -3,7 +3,7 @@
   "description": "路由管理",
   "keywords": [
     "icePHP",
-    "config"
+    "router"
   ],
   "homepage": "https://github.com/ice-php/router",
   "type": "composer",
