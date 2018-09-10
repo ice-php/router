@@ -17,3 +17,15 @@ function url(string $module = '', string $controller = "", string $action = "", 
 {
     return Router::encode($module, $controller, $action, $params);
 }
+
+/**
+ * 为一个URL地址附加一些参数
+ *
+ * @param string $url
+ * @param array $params
+ * @return string
+ */
+function urlAppend(string $url, array $params): string
+{
+    return Router::urlAppend($url, $params);
+}
