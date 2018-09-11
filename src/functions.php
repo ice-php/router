@@ -13,7 +13,7 @@ namespace icePHP;
  * @param array $params 参数表
  * @return string 路径字符串,不带域名部分
  */
-function url(string $module = '', string $controller = "", string $action = "", array $params = []): string
+function url(?string $module = '', ?string $controller = "", ?string $action = "", ?array $params = []): string
 {
     return Router::encode($module, $controller, $action, $params);
 }

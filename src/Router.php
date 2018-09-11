@@ -247,7 +247,7 @@ final class Router
      * @param array $params 参数表
      * @return string 生成的URL地址
      */
-    static public function encode(string $module = '', string $controller = "", string $action = "", array $params = []):string
+    static public function encode(?string $module = '', ?string $controller = "", ?string $action = "", ?array $params = []):string
     {
         // 配置中的根
         $url = Config::get('system', 'host');
