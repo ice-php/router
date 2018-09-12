@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 namespace icePHP;
 
 /**
@@ -14,17 +15,17 @@ final class Router
     }
 
     //M,C,A参数名称
-    static private $mcaName;
+    static private $mcaName=['m','c','a'];
 
     //当前系统有哪些模块
-    static private $modules;
+    static private $modules=[];
 
     /**
      * 初始化,由SFrame调用
      * @param $mcaName array MCA参数名称
      * @param array $modules 当前系统有哪些模块
      */
-    public static function init(array $mcaName, array $modules):void
+    public static function init(array $mcaName, array $modules): void
     {
         self::$mcaName = $mcaName;
         self::$modules = $modules;
@@ -33,7 +34,7 @@ final class Router
     /**
      * 生成缺省的控制器及动作
      */
-    static private function decodeDefault():void
+    static private function decodeDefault(): void
     {
         // 取MCA三项参数名及默认值
         list ($m, $c, $a) = self::$mcaName;
@@ -59,9 +60,15 @@ final class Router
      * 获取系统配置中的MAC缺少值
      * @return array [默认模块名称,默认控制器,默认动作]
      */
-    static private function getMCADefault():array
+    static private function getMCADefault(): array
     {
-        $system = Config::get('system');
+        try {
+            $system = config('system');
+        } catch (ConfigException $e) {
+            //如果取不到配置,使用以下默认值
+            return ['', 'home', 'index'];
+        }
+
         return [
             $system['default_module'],
             $system['default_controller'],
@@ -75,10 +82,16 @@ final class Router
      * @param string $path
      * @return string|bool
      */
-    static private function decodeConfig(string $path):?string
+    static private function decodeConfig(string $path): ?string
     {
+        //如果取不到路由配置,则不对此请求进行解析处理,即保持原样
+        $config = configDefault(false, 'router');
+        if (!$config) {
+            return null;
+        }
+
         // 根据路由配置进行解码,循环每一个配置
-        foreach (Config::get('router') as $key => $case) {
+        foreach ($config as $key => $case) {
             // 下划线开头的表示配置参数,不是路由
             if (substr($key, 0, 1) == '_') {
                 continue;
@@ -107,7 +120,7 @@ final class Router
      *
      * @param string $path controller/action, 不包括 协议及域名,端口,参数列表
      */
-    static public function decode(string $path = ""):void
+    static public function decode(string $path = ""): void
     {
         // 是否特指解析
         $replace = self::decodeConfig($path);
@@ -121,7 +134,7 @@ final class Router
             $mode = '路径模式';
         } else {
             // URL模式:传统模式/单入口模式/路径模式
-            $mode = Config::get('system', 'url_mode');
+            $mode = configDefault('传统模式', 'system', 'url_mode');
         }
 
         // 如果路径为空,跳转到最后,补充默认控制器与方法
@@ -192,7 +205,7 @@ final class Router
      * @param array $params 参数
      * @return string 继续 转义后的路径
      */
-    static private function encodeMatched(string $pattern, array $params):string
+    static private function encodeMatched(string $pattern, array $params): string
     {
         // 参数替换进去
         $others = [];
@@ -217,7 +230,7 @@ final class Router
      * @param array $params
      * @return string
      */
-    static public function urlAppend(string $url, array $params):string
+    static public function urlAppend(string $url, array $params): string
     {
         // 如果已经有参数,附加&,否则附加?
         if (!strpos($url, '?')) {
@@ -247,13 +260,13 @@ final class Router
      * @param array $params 参数表
      * @return string 生成的URL地址
      */
-    static public function encode(?string $module = '', ?string $controller = "", ?string $action = "", ?array $params = []):string
+    static public function encode(?string $module = '', ?string $controller = "", ?string $action = "", ?array $params = []): string
     {
         // 配置中的根
-        $url = Config::get('system', 'host');
+        $url = configDefault('/', 'system', 'host');
 
         // 配置中的路由模式
-        $mode = Config::get('system', 'url_mode');
+        $mode = configDefault('传统模式', 'system', 'url_mode');
 
         //取默认MCA
         list($defaultM, $defaultC, $defaultA) = self::getMCADefault();
@@ -264,7 +277,8 @@ final class Router
         $action = $action ?: $defaultA;
 
         // 根据路由配置进行编码
-        foreach (Config::get('router') as $key => $case) {
+        $router = configDefault([], 'router');
+        foreach ($router as $key => $case) {
             // 这个不是路由配置,而是参数
             if (substr($key, 0, 1) == '_') continue;
 
@@ -339,7 +353,7 @@ final class Router
 
         // 附加参数
         foreach ($params as $key => $value) {
-            $url .= $key . '=' . urlencode(''.$value) . '&';
+            $url .= $key . '=' . urlencode('' . $value) . '&';
         }
         return trim(trim($url, '&'), '?');
     }
@@ -351,10 +365,10 @@ final class Router
      * @param string $path URI 去除了 协议,端口,站点,以首个/
      * @return boolean
      */
-    static public function ignore(string $path):bool
+    static public function ignore(string $path): bool
     {
         // 取配置
-        $all = Config::get('router', '_ignore');
+        $all = configDefault(false,'router', '_ignore');
 
         // 如果没有配置,或为空
         if (!$all) {
